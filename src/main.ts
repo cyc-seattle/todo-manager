@@ -87,16 +87,25 @@ program
       const participantSheet = `https://docs.google.com/spreadsheets/d/12qrnXz0y9Wq4tV0_B64KFJZJph5-vbwfLxpB2w8rS1o/edit?gid=823472385#gid=823472385`;
       const buffer = Duration.fromObject({ weeks: 1 });
       const project = await todoist.getOrAddProject(parentProject, projectName, "violet");
+      if (project === undefined) {
+        throw new Error(`Could not create a project with name ${projectName}`);
+      }
+      const projectId = project.id;
 
       async function scheduleEmailTask(options: CampEmailOptions) {
         const sessionStartDate = options.startDate.toLocaleString(DateTime.DATE_SHORT);
         const scheduledSendDate = options.scheduledEmailDate.toLocaleString(DateTime.DATE_SHORT);
 
+        const dueDate = options.scheduledEmailDate.minus(buffer).toISODate();
+        if (dueDate === null) {
+          throw new Error(`Invalid scheduled date for ${options.emailName}`);
+        }
+
         await todoist.addTask({
-          projectId: project.id,
+          projectId,
           content: `Schedule ${options.emailName} for ${options.campName}, session ${sessionStartDate}`,
           description: `Scheduled Send Date: ${scheduledSendDate}\n[Participants](${participantSheet})\n[Email Template](${options.emailTemplateUrl})`,
-          dueDate: options.scheduledEmailDate.minus(buffer),
+          dueDate,
           priority: 4,
         });
       }
